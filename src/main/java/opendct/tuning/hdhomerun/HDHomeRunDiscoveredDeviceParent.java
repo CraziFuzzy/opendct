@@ -48,15 +48,17 @@ public class HDHomeRunDiscoveredDeviceParent extends NetworkDiscoveredDevicePare
             try {
                 channelMap = new StringDeviceOption(
                         "",
-                        false,
+						false,
                         "Channel Map",
                         propertiesDeviceParent + "channel_map",
                         "Change the channel map used for tuning on this HDHomeRun device. Valid" +
-                                " values are 'us-cable' and 'us-bcast'. This option has no effect" +
-                                " on CableCARD devices.",
+                                " values are 'us-cable', 'us-hrc', 'us-irc' and 'us-bcast'." +
+                                " This option has no effect when using a CableCARD.",
                         "",
                         "us-cable",
                         "us-bcast",
+                        "us-hrc",
+                        "us-irc",
                         "eu-cable",
                         "eu-bcast"
                 );

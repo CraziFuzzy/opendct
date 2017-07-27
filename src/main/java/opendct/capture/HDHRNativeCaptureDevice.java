@@ -98,8 +98,10 @@ public class HDHRNativeCaptureDevice extends BasicCaptureDevice {
         // =========================================================================================
         encoderDeviceType = CaptureDeviceType.HDHOMERUN;
         boolean cableCardPresent = false;
-
-        try {
+		
+		String channelMapName = "us-cable";
+        
+		try {
             if (device.isCableCardTuner()) {
                 cableCardPresent = device.getCardStatus().toLowerCase().contains("card=ready");
 
@@ -107,36 +109,48 @@ public class HDHRNativeCaptureDevice extends BasicCaptureDevice {
                     encoderDeviceType = CaptureDeviceType.DCT_HDHOMERUN;
                     setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "dct"));
                 } else {
+					if (!discoveredDeviceParent.getChannelMap().equals("")) {
+						tuner.setChannelmap(discoveredDeviceParent.getChannelMap());
+					}
+
+					channelMapName = tuner.getChannelmap();
+					
                     encoderDeviceType = CaptureDeviceType.QAM_HDHOMERUN;
                     setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "qam"));
-                }
+				}
             } else {
-                if (!discoveredDeviceParent.getChannelMap().equals("")) {
+				if (!discoveredDeviceParent.getChannelMap().equals("")) {
                     tuner.setChannelmap(discoveredDeviceParent.getChannelMap());
                 }
 
-                String channelMapName = tuner.getChannelmap();
-                HDHomeRunChannelMap channelMap = HDHomeRunFeatures.getEnumForChannelmap(channelMapName);
+                channelMapName = tuner.getChannelmap();
 
-                switch (channelMap) {
-                    case US_BCAST:
+                switch (channelMapName) {
+                    case "us-bcast":
                         encoderDeviceType = CaptureDeviceType.ATSC_HDHOMERUN;
                         setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "atsc_" + device.getDeviceIdHex().toLowerCase()));
                         break;
-
-                    case US_CABLE:
+                    case "us-cable":
                         encoderDeviceType = CaptureDeviceType.QAM_HDHOMERUN;
                         setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "qam"));
                         break;
-                    case EU_BCAST:
+                    case "us-hrc":
+                        encoderDeviceType = CaptureDeviceType.QAM_HDHOMERUN;
+                        setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "qam"));
+                        break;
+                    case "us-irc":
+                        encoderDeviceType = CaptureDeviceType.QAM_HDHOMERUN;
+                        setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "qam"));
+                        break;
+                    case "eu-bcast":
                         encoderDeviceType = CaptureDeviceType.DVBT_HDHOMERUN;
                         setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "dvb-t"));
                         break;
-                    case EU_CABLE:
+                    case "eu-cable":
                         encoderDeviceType = CaptureDeviceType.DVBC_HDHOMERUN;
                         setPoolName(Config.getString(propertiesDeviceRoot + "encoder_pool", "dvb-c"));
-                        break;
-                    case UNKNOWN:
+						break;
+                    default:
                         throw new CaptureDeviceLoadException("The program currently does not" +
                                 " know how to use the channel map '" + channelMapName + "'.");
                 }
@@ -152,7 +166,7 @@ public class HDHRNativeCaptureDevice extends BasicCaptureDevice {
         // =========================================================================================
         // Configure channel lineup
         // =========================================================================================
-
+		
         String newLineupName;
 
         if (isTuneLegacy()) {
@@ -185,20 +199,26 @@ public class HDHRNativeCaptureDevice extends BasicCaptureDevice {
             httpServices = new HTTPCaptureDeviceServices();
         }
 
-        switch (encoderDeviceType) {
-            case DVBC_HDHOMERUN:
+		switch ( channelMapName ) {
+            case "eu-cable":
                 lookupMap = Frequencies.EU_CABLE;
                 break;
-            case DVBT_HDHOMERUN:
+            case "eu-bcast":
                 lookupMap = Frequencies.EU_BCAST;
                 break;
-            case ATSC_HDHOMERUN:
+            case "us-bcast":
                 lookupMap = Frequencies.US_BCAST;
                 break;
-            default:
-                lookupMap = Frequencies.US_CABLE;
+			case "us-hrc":
+				lookupMap = Frequencies.US_HRC;
+				break;
+			case "us-irc":
+				lookupMap = Frequencies.US_IRC;
+				break;
+			default:
+				lookupMap = Frequencies.US_CABLE;
         }
-
+		
         rtpServices = new RTPCaptureDeviceServices(encoderName, propertiesDeviceParent);
 
         setChannelLineup(newLineupName);
@@ -238,6 +258,7 @@ public class HDHRNativeCaptureDevice extends BasicCaptureDevice {
                 " Remote IP: '{}'," +
                 " Local IP: '{}'," +
                 " CableCARD: {}," +
+				" Channel Map: {}," +
                 " Lineup: '{}'," +
                 " Offline Scan Enabled: {}," +
                 " RTP Port: {}",
@@ -246,6 +267,7 @@ public class HDHRNativeCaptureDevice extends BasicCaptureDevice {
                 device.getIpAddress().getHostAddress(),
                 discoveredDeviceParent.getLocalAddress().getHostAddress(),
                 cableCardPresent,
+				channelMapName,
                 encoderLineup,
                 offlineChannelScan,
                 rtpServices.getRtpLocalPort());
